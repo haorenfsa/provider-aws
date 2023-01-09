@@ -151,3 +151,12 @@ crossplane.help:
 help-special: crossplane.help
 
 .PHONY: crossplane.help help-special
+
+prepare:
+	./scripts/prepare.sh
+
+generate-all: generate prepare
+
+
+generate-one:
+	controller-gen crd paths=./apis/route53/v1alpha1/... output=./package/crds
