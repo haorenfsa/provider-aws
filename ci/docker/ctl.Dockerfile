@@ -11,7 +11,7 @@ WORKDIR /go/src/github.com/haorenfsa/provider-aws
 COPY go.mod go.sum ./
 COPY cmd ./cmd
 COPY apis  ./apis
-COPY internal  ./internal
+COPY pkg  ./pkg
 RUN mkdir -p ./bin && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/crossplane-aws-provider ./cmd/provider
 
 FROM alpine:3.13
