@@ -23,6 +23,7 @@ import (
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -99,6 +100,16 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errUnexpectedObject)
 	}
 
+	// If not deleted & updateToDaye & isReady, we assume ready, for AWS limits route53 api to 5 req/s
+	if cr.DeletionTimestamp != nil &&
+		cr.Status.ObservedGeneration == cr.GetGeneration() &&
+		cr.Status.GetCondition(xpv1.TypeReady).Status == corev1.ConditionTrue {
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true,
+		}, nil
+	}
+
 	rrs, err := resourcerecordset.GetResourceRecordSet(ctx, meta.GetExternalName(cr), cr.Spec.ForProvider, e.client)
 	if err != nil {
 		// Either there is err and retry. Or Resource does not exist.
@@ -119,6 +130,14 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	upToDate, err := resourcerecordset.IsUpToDate(cr.Spec.ForProvider, *rrs)
 	if err != nil {
 		return managed.ExternalObservation{}, errors.Wrap(err, errState)
+	}
+
+	if upToDate {
+		cr.Status.ObservedGeneration = cr.GetGeneration()
+		err := e.kube.Status().Update(ctx, cr)
+		if err != nil {
+			return managed.ExternalObservation{}, errors.Wrap(err, errKubeUpdate)
+		}
 	}
 
 	return managed.ExternalObservation{

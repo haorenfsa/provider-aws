@@ -159,4 +159,4 @@ generate-all: generate prepare
 
 
 generate-one:
-	controller-gen crd paths=./apis/route53/v1alpha1/... output=./package/crds
+	controller-gen crd paths=./apis/route53/v1alpha1/... crd:allowDangerousTypes=true,crdVersions=v1 output:artifacts:config=./package/crds
