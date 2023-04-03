@@ -101,7 +101,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// If not deleted & updateToDaye & isReady, we assume ready, for AWS limits route53 api to 5 req/s
-	if cr.DeletionTimestamp != nil &&
+	if cr.DeletionTimestamp == nil &&
 		cr.Status.ObservedGeneration == cr.GetGeneration() &&
 		cr.Status.GetCondition(xpv1.TypeReady).Status == corev1.ConditionTrue {
 		return managed.ExternalObservation{
